@@ -120,7 +120,6 @@ stage2(void *ffq0)
 	while (data != testn) {
 		if (ffq_dequeue(ffq, &data) == EWOULDBLOCK)
 			continue;
-		printf("data = %llu\n", data);
 	}
 	return (NULL);
 }
