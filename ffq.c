@@ -76,11 +76,15 @@ ffq_slip(struct ffq *ffq)
  */
 
 #include <pthread.h>
+#include <string.h>
 
+#define TESTDEFN 1000000;
+
+void __dead usage(void);
 void *stage1(void *);
 void *stage2(void *);
 
-#define TESTN 10000000
+u_int64_t testn = TESTDEFN;	/* Number of entries in the system (-n) */
 
 void *
 stage1(void *ffq0)
@@ -88,11 +92,11 @@ stage1(void *ffq0)
 	struct ffq *ffq = ffq0;
 	u_int64_t data;
 
-	for (data = 1; data <= TESTN; data++) {
+	for (data = 1; data <= testn; data++) {
 again:
 		if (ffq_enqueue(ffq, data) == EWOULDBLOCK)
 			goto again;
-		if (data > TESTN)
+		if (data > testn)
 			errx(1, "data is funny !!!!!! (%llu)", data);
 	}
 	return (NULL);
@@ -104,12 +108,21 @@ stage2(void *ffq0)
 	struct ffq *ffq = ffq0;
 	u_int64_t data = 0;
 
-	while (data != TESTN) {
+	while (data != testn) {
 		if (ffq_dequeue(ffq, &data) == EWOULDBLOCK)
 			continue;
 		printf("data = %llu\n", data);
 	}
 	return (NULL);
+}
+
+void __dead
+usage(void)
+{
+	fprintf(stderr,
+	    "usage: ffq [-n nentries]\n"
+	    "       ffq -h\n");
+	exit(1);
 }
 
 int
@@ -118,6 +131,23 @@ main(int argc, char *argv[])
 	struct ffq	ffq;
 	pthread_t	stage1_tid;
 	pthread_t	stage2_tid;
+	const char 	*errstr;
+	int 		c;
+	
+	while ((c = getopt(argc, argv, "n:")) != -1) {
+		switch (c) {	
+			case 'n':
+				testn = strtonum(optarg, 1, LLONG_MAX,
+				    &errstr);
+				if (errstr != NULL)
+					errx(1, "Invalid value for n: %s",
+					    errstr);
+				break;
+			case 'h':
+			default:
+				usage();
+			}
+	}
 
 	bzero(&ffq, sizeof(ffq));
 	
