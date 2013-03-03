@@ -78,7 +78,7 @@ ffq_slip(struct ffq *ffq)
 #include <pthread.h>
 #include <string.h>
 
-#define TESTDEFN 1000000;
+#define TESTDEFN 250000000;
 
 void __dead usage(void);
 void *stage1(void *);
