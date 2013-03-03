@@ -22,21 +22,21 @@
 #include <stdlib.h>
 
 #define FFQ_LEN 	1024
-#define FFQ_FREE	0
+#define FFQ_FREE	NULL
 
 struct ffq {
 	int ffq_head;
 	int ffq_tail;
 
-	u_int64_t ffq_buffer[FFQ_LEN];
+	void *ffq_buffer[FFQ_LEN];
 };
 
-int	ffq_enqueue(struct ffq *, u_int64_t);
-int	ffq_dequeue(struct ffq *, u_int64_t *);
+int	ffq_enqueue(struct ffq *, void *);
+int	ffq_dequeue(struct ffq *, void **);
 void	ffq_slip(struct ffq *);
 
 int
-ffq_enqueue(struct ffq *ffq, u_int64_t data)
+ffq_enqueue(struct ffq *ffq, void *data)
 {
 	if (data == FFQ_FREE)
 		errx(1, "whoops got data as FFQ_FREE");
@@ -51,7 +51,7 @@ ffq_enqueue(struct ffq *ffq, u_int64_t data)
 }
 
 int
-ffq_dequeue(struct ffq *ffq, u_int64_t *data)
+ffq_dequeue(struct ffq *ffq, void **data)
 {
 	*data = ffq->ffq_buffer[ffq->ffq_tail];
 
@@ -117,7 +117,7 @@ stage1(void *ffq0)
 	     data <= testn;
 	     last = data, data++) {
 again:
-		if (ffq_enqueue(ffq, data) == EWOULDBLOCK) {
+		if (ffq_enqueue(ffq, (void *)data) == EWOULDBLOCK) {
 			blocks++;
 			goto again;
 		}
@@ -141,7 +141,7 @@ stage2(void *ffq0)
 	u_int64_t blocks = 0;
 
 	while (data != testn) {
-		if (ffq_dequeue(ffq, &data) == EWOULDBLOCK) {
+		if (ffq_dequeue(ffq, (void *)&data) == EWOULDBLOCK) {
 			blocks++;
 			continue;
 		}
