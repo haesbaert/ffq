@@ -95,19 +95,41 @@ rdtsc(void)
 	return (((u_int64_t)hi << 32) | (u_int64_t)lo);
 }
 
+static inline void
+busywait(u_int64_t cycles)
+{
+	u_int64_t x;
+
+	x = rdtsc();
+
+	while ((rdtsc() - x) < cycles)
+		;
+}
+
 void *
 stage1(void *ffq0)
 {
 	struct ffq *ffq = ffq0;
-	u_int64_t data;
+	u_int64_t data, last;
+	u_int64_t blocks = 0;
 
-	for (data = 1; data <= testn; data++) {
+	for (data = 1, last = 0;
+	     data <= testn;
+	     last = data, data++) {
 again:
-		if (ffq_enqueue(ffq, data) == EWOULDBLOCK)
+		if (ffq_enqueue(ffq, data) == EWOULDBLOCK) {
+			blocks++;
 			goto again;
+		}
+		
 		if (data > testn)
 			errx(1, "data is funny !!!!!! (%llu)", data);
+		if ((data -1) != last)
+			errx(1, "data/last mismatch data = %llu, last = %llu\n",
+			    data, last);
 	}
+	printf("stage1 blocks: %llu\n", blocks);
+
 	return (NULL);
 }
 
@@ -116,11 +138,16 @@ stage2(void *ffq0)
 {
 	struct ffq *ffq = ffq0;
 	u_int64_t data = 0;
+	u_int64_t blocks = 0;
 
 	while (data != testn) {
-		if (ffq_dequeue(ffq, &data) == EWOULDBLOCK)
+		if (ffq_dequeue(ffq, &data) == EWOULDBLOCK) {
+			blocks++;
 			continue;
+		}
 	}
+	printf("stage2 blocks: %llu\n", blocks);
+	
 	return (NULL);
 }
 
