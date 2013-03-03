@@ -86,6 +86,15 @@ void *stage2(void *);
 
 u_int64_t testn = TESTDEFN;	/* Number of entries in the system (-n) */
 
+static inline u_int64_t
+rdtsc(void)
+{
+	u_int32_t hi, lo;
+	__asm __volatile("rdtsc" : "=d" (hi), "=a" (lo));
+
+	return (((u_int64_t)hi << 32) | (u_int64_t)lo);
+}
+
 void *
 stage1(void *ffq0)
 {
@@ -133,9 +142,9 @@ main(int argc, char *argv[])
 	pthread_t	stage2_tid;
 	const char 	*errstr;
 	int 		c;
-	
+
 	while ((c = getopt(argc, argv, "n:")) != -1) {
-		switch (c) {	
+		switch (c) {
 			case 'n':
 				testn = strtonum(optarg, 1, LLONG_MAX,
 				    &errstr);
@@ -150,7 +159,7 @@ main(int argc, char *argv[])
 	}
 
 	bzero(&ffq, sizeof(ffq));
-	
+
 	if (pthread_create(&stage1_tid, NULL, stage1, &ffq) == -1)
 		err(1, "pthread_create");
 	if (pthread_create(&stage2_tid, NULL, stage2, &ffq) == -1)
@@ -160,6 +169,6 @@ main(int argc, char *argv[])
 		err(1, "pthread_join");
 	if (pthread_join(stage2_tid, NULL) == -1)
 		err(1, "pthread_join");
-	
+
 	return (0);
 }
