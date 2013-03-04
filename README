@@ -1,0 +1,7 @@
+This is a rough implementation of Fast Forward Queues as described in:
+
+http://ce.colorado.edu/users/jgiacomo/papers/giacomoni08ppopp.pdf
+
+This is an experiment only, I have not added the slip code since it is pointless
+on userland: we get switched away, cross cpus and so on.
+
